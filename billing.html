@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Billing System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            font-size: 12px;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+        }
+        .section {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .categories {
+            flex: 0.125;
+        }
+
+        .categories .category-btn {
+            display: block;
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 5px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .items {
+            flex: 1;
+        }
+
+        #items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .items #items {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .item-card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            width: 90px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .item-card img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+        }
+
+        #creditorList {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        #creditorList li {
+            padding: 5px;
+            cursor: pointer;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #creditorList li:hover {
+            background-color: #f0f0f0;
+        }
+
+        .bill {
+            flex: 0.3;
+        }
+
+        .bill table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .bill th, .bill td {
+            border: 1px solid #ddd;
+            padding: 5px;
+            text-align: center;
+        }
+
+        .bill input[type="number"] {
+            width: 60px;
+            padding: 3px;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+#numberPad {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 160px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 20px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.num-key {
+    width: 50px;
+    height: 50px;
+    font-size: 30px;
+    font-weight: bold;
+    text-align: center;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(145deg, #007bff, #0056b3);
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.num-key:active {
+    background: linear-gradient(145deg, #0056b3, #003f8c);
+    transform: scale(0.95);
+}
+
+#numPadClear, #numPadBackspace {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+    background: linear-gradient(145deg, #ff3b30, #c12722);
+    border-radius: 10px;
+}
+
+
+
+
+
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Category Section -->
+    <div class="section categories">
+        <h3>Categories</h3>
+        <div id="categoryButtons"></div>
+    </div>
+
+    <!-- Items Section -->
+    <div class="section items">
+        <input type="text" id="searchPLU" placeholder="Search by PLU" style="width: 30%; margin-bottom: 8px; padding: 3px;">
+        <div id="items"></div>
+    </div>
+
+    <!-- Bill Section -->
+    <div class="section bill">
+        <h2>Bill No: <span id="billNumber">Loading...</span></h2>
+        <div>
+            <!-- Creditor Search -->
+            <div class="section creditors">
+                <h3>Search Creditor</h3>
+                <input type="text" id="creditorSearch" placeholder="Search by name or phone number" style="width: 60%; margin-bottom: 8px;">
+                <ul id="creditorList" style="list-style: none; padding: 0; display: none;"></ul>
+            </div>
+
+            <div id="selectedCreditor" style="display: none; margin-bottom: 10px;">
+	    	<input type="hidden" id="creditorId" value="">
+                <strong>Creditor Name:</strong> <span id="creditorName"></span><br>
+                <strong>Credit Amount:</strong> $<span id="creditAmount">0.00</span>
+            </div>
+
+            <table>
+                <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Price</th>
+                    <th>Quantity</th>
+                    <th>Total</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody id="billTable"></tbody>
+            </table>
+	    <h3>Total: $<span id="total">0.00</span></h3>
+	    <h3>Credit + Total: $<span id="creditTotal">0.00</span></h3>
+
+
+            <label for="cash">Cash:</label>
+            <input type="number" id="cash" placeholder="Enter cash amount" oninput="calculateBalance()">
+
+	    <label for="balance">Balance:</label>
+	    <input type="number" id="balance" value="0.00" step="0.01">
+
+	    <h3>New Credit Amount: $<span id="newCreditAmount">0.00</span></h3>
+
+
+            <button id="checkout">Checkout</button>
+	<form id="checkoutForm">
+
+	</form>
+        </div>
+    </div>
+</div>
+
+<div id="numberPad" style="display: none; position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+    background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <div id="numPadKeys" style="display: grid; grid-template-columns: repeat(3, 50px); gap: 5px;">
+        <button class="num-key">1</button>
+        <button class="num-key">2</button>
+        <button class="num-key">3</button>
+        <button class="num-key">4</button>
+        <button class="num-key">5</button>
+        <button class="num-key">6</button>
+        <button class="num-key">7</button>
+        <button class="num-key">8</button>
+        <button class="num-key">9</button>
+        <button class="num-key">0</button>
+        <button id="numPadClear">C</button>
+        <button id="numPadBackspace">⌫</button>
+    </div>
+</div>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+        console.log("Document is ready.");
+        fetchBillNumber();
+        fetchCategories();
+        loadItems();
+	let activeInput = null;
+
+        function fetchBillNumber() {
+            console.log("Fetching bill number...");
+            $.get('get_bill_number.php', function (response) {
+                console.log("Received bill number response:", response);
+                $('#billNumber').text(response.bill_number);
+            }, 'json').fail(function () {
+                console.error("Failed to fetch bill number.");
+            });
+        }
+
+        function fetchCategories() {
+            console.log("Fetching categories...");
+            $.get('categories.php', function (categories) {
+                console.log("Received categories:", categories);
+                const categoryButtons = $('#categoryButtons');
+                categoryButtons.empty();
+                categories.forEach(category => {
+                    categoryButtons.append(`<button class="category-btn" data-category="${category}">${category}</button>`);
+                });
+            }, 'json').fail(function () {
+                console.error("Failed to fetch categories.");
+            });
+        }
+
+        function loadItems(category = '', plu = '') {
+            console.log("Loading items with category:", category, "PLU:", plu);
+            const params = {};
+            if (category) params.category = category;
+            if (plu) params.PLU = plu;
+
+            $.get('items.php', params, function (items) {
+                console.log("Received items:", items);
+                const itemsDiv = $('#items');
+                itemsDiv.empty();
+                items.forEach(item => {
+                    itemsDiv.append(`
+                        <div class="item-card" data-id="${item.id}" data-plu="${item.PLU}" data-name="${item.name}" data-price="${item.price}">
+                            <img src="${item.image_path}" alt="${item.name}">
+                            <strong>${item.name}</strong>
+                            <span>PLU: ${item.PLU}</span>
+                            <span>Price: $${item.price}</span>
+                        </div>
+                    `);
+                });
+            }, 'json').fail(function () {
+                console.error("Failed to load items.");
+            });
+        }
+
+        $('#searchPLU').on('input', function () {
+            const plu = $(this).val();
+            console.log("Searching items by PLU:", plu);
+            loadItems('', plu);
+        });
+
+        $(document).on('click', '.category-btn', function () {
+            const category = $(this).data('category');
+            console.log("Category button clicked:", category);
+            loadItems(category);
+        });
+
+        $(document).on('click', '.item-card', function () {
+            const plu = $(this).data('plu');
+            const name = $(this).data('name');
+            const price = parseFloat($(this).data('price'));
+            console.log("Item card clicked:", { plu, name, price });
+            addToBill(plu, name, price);
+        });
+
+// Search creditors by name or phone
+$('#creditorSearch').on('input', function () {
+    const searchQuery = $(this).val().trim();
+    const creditorList = $('#creditorList');
+    creditorList.empty(); // Clear previous results
+
+    if (searchQuery.length > 0) {
+        $.ajax({
+            url: 'creditors.php',
+            type: 'GET',
+            data: { query: searchQuery },
+            dataType: 'json',
+            success: function (creditors) {
+                console.log("Received creditors:", creditors);
+
+                if (creditors.length > 0) {
+                    creditors.forEach(creditor => {
+                        creditorList.append(`
+                            <li data-id="${creditor.id}" 
+                                data-name="${creditor.name}" 
+                                data-phone="${creditor.phone}" 
+                                data-credit="${creditor.credit_amount}">
+                                ${creditor.id} - ${creditor.name} (${creditor.phone}) - $${creditor.credit_amount}
+                            </li>
+                        `);
+                    });
+                    creditorList.show();
+                } else {
+                    creditorList.append('<li>No results found</li>').show();
+                }
+            },
+            error: function () {
+                console.error("Error fetching creditors.");
+                creditorList.html('<li>Error fetching creditors</li>').show();
+            }
+        });
+    } else {
+        creditorList.hide();
+    }
+});
+
+        // Select creditor from list
+        $(document).on('click', '#creditorList li', function () {
+            const creditorID = $(this).data('id'); // Get creditor ID
+            const name = $(this).data('name');
+            const phone = $(this).data('phone');
+            const creditAmount = parseFloat($(this).data('credit')).toFixed(2);
+
+            // Populate creditor details
+            $('#creditorId').val(creditorID); // Set hidden input value
+            $('#creditorName').text(name);
+            $('#creditorPhone').text(phone);
+            $('#creditAmount').text(creditAmount);
+
+            // Show selected creditor section
+            $('#selectedCreditor').show();
+            $('#creditorList').hide();
+            $('#creditorSearch').val('');
+
+            updateTotal(); // Update total to reflect credit + total
+        });
+
+
+
+        function addToBill(plu, name, price) {
+            console.log("Adding item to bill:", { plu, name, price });
+            const billTable = $('#billTable');
+            const existingRow = billTable.find(`tr[data-plu="${plu}"]`);
+            if (existingRow.length) {
+                const quantityInput = existingRow.find('.quantity');
+                quantityInput.val(parseInt(quantityInput.val()) + 1).trigger('input');
+            } else {
+                billTable.append(`
+                    <tr data-plu="${plu}">
+                        <td>${name}</td>
+                        <td>$${price.toFixed(2)}</td>
+                        <td><input type="number" class="quantity" value="1" min="1" oninput="updateBillRow(this, ${price})"></td>
+                        <td class="row-total">$${price.toFixed(2)}</td>
+                        <td><button onclick="removeFromBill(this)">Remove</button></td>
+                    </tr>
+                `);
+            }
+            updateTotal();
+        }
+
+        window.updateBillRow = function (input, price) {
+            const quantity = parseInt($(input).val()) || 0;
+            console.log("Updating bill row:", { quantity, price });
+            const row = $(input).closest('tr');
+            const total = price * quantity;
+            row.find('.row-total').text(`$${total.toFixed(2)}`);
+            updateTotal();
+        };
+
+        window.removeFromBill = function (button) {
+            console.log("Removing item from bill.");
+            $(button).closest('tr').remove();
+            updateTotal();
+        };
+
+    // Show number pad when clicking input fields
+    $('#creditorSearch, #cash, #balance, #searchPLU').on('focus', function () {
+        activeInput = $(this);
+        $('#numberPad').show();
+    });
+
+    // Handle number pad input and trigger search if needed
+    $('.num-key').on('click', function () {
+        if (activeInput) {
+            let currentValue = activeInput.val();
+            let newValue = currentValue + $(this).text();
+            activeInput.val(newValue).trigger('input'); // Ensures live search works
+        }
+    });
+
+    // Clear input field
+    $('#numPadClear').on('click', function () {
+        if (activeInput) {
+            activeInput.val('').trigger('input'); // Ensures live search resets
+        }
+    });
+
+    // Backspace function (remove last character)
+    $('#numPadBackspace').on('click', function () {
+        if (activeInput) {
+            let currentValue = activeInput.val();
+            let newValue = currentValue.slice(0, -1); // Remove last character
+            activeInput.val(newValue).trigger('input'); // Triggers search update
+        }
+    });
+
+    // Hide number pad when clicking outside
+    $(document).on('click', function (event) {
+        if (!$(event.target).closest('#numberPad, #creditorSearch, #cash, #balance, #searchPLU').length) {
+            $('#numberPad').hide();
+        }
+    });
+
+	function updateTotal() {
+	    let total = 0;
+	    $('#billTable .row-total').each(function () {
+	        total += parseFloat($(this).text().replace('$', ''));
+	    });
+	
+	    const creditAmount = parseFloat($('#creditAmount').text()) || 0;
+	    const creditTotal = total + creditAmount;
+	
+	    console.log("Updated total:", total, "Credit + Total:", creditTotal);
+	    $('#total').text(total.toFixed(2));
+	    $('#creditTotal').text(creditTotal.toFixed(2));
+	}
+	
+// Global variable for balance
+let balance = 0;
+
+
+// Function to calculate the new credit amount
+function calculateCreditAmount() {
+    const totalBill = parseFloat($('#total').text()) || 0;
+    const cash = parseFloat($('#cash').val()) || 0;
+    const oldCreditAmount = parseFloat($('#creditAmount').text()) || 0;
+    let balance = parseFloat($('#balance').val()) || 0; // Get manually entered balance
+
+    if (cash < totalBill) {
+        let newCreditAmount = oldCreditAmount + (totalBill - cash) + balance;
+        $('#newCreditAmount').text(newCreditAmount.toFixed(2));
+    } else {
+        let newCreditAmount = oldCreditAmount + totalBill - cash + balance;
+        $('#newCreditAmount').text(newCreditAmount.toFixed(2));
+    }
+}
+
+// Function to auto-calculate balance when cash changes
+function calculateBalance() {
+    const totalBill = parseFloat($('#total').text()) || 0;
+    const cash = parseFloat($('#cash').val()) || 0;
+    let newBalance = cash >= totalBill ? cash - totalBill : 0; // Ensure balance is zero if cash < total
+
+    $('#balance').val(newBalance.toFixed(2));
+    calculateCreditAmount(); // Update credit amount
+}
+
+
+// Event Listeners
+$('#cash').on('input', calculateBalance);  // Auto-update balance
+$('#balance').on('input', calculateCreditAmount); // Allow manual entry
+
+
+
+
+        // Checkout Button Click Event
+        $('#checkout').on('click', function () {
+            const billItems = [];
+            $('#billTable tr').each(function () {
+                billItems.push({
+                    PLU: $(this).data('plu'),
+                    quantity: $(this).find('.quantity').val()
+                });
+            });
+
+            const totalBill = parseFloat($('#total').text()) || 0;
+            const cash = parseFloat($('#cash').val()) || 0;
+            const oldCreditAmount = parseFloat($('#creditAmount').text()) || 0;
+            const balance = parseFloat($('#balance').val()) || 0;
+            const creditorID = $('#creditorId').val(); // Fetching correct creditor ID
+
+            let newCreditAmount = oldCreditAmount + totalBill - cash + balance;
+
+            const billData = {
+                total_amount: totalBill,
+                cash: cash,
+                balance: balance,
+                bill_number: $('#billNumber').text().trim(),
+                creditor_id: creditorID || null, // Ensure valid creditor ID
+                creditor_name: $('#creditorName').text().trim() || null,
+                creditor_phone: $('#creditorPhone').text().trim() || null,
+                credit_amount: newCreditAmount,
+                bill_items: billItems
+            };
+
+            console.log("Sending bill data:", billData);
+
+            $.ajax({
+                url: 'save_bill.php',
+                type: 'POST',
+                data: JSON.stringify(billData),
+                contentType: 'application/json',
+                success: function (response) {
+                    alert('Bill saved successfully!');
+                    location.reload();
+                },
+                error: function (xhr) {
+                    console.error("Error saving bill:", xhr.responseText);
+                    alert(xhr.responseText || 'Failed to save bill.');
+                }
+            });
+        });
+
+// Trigger balance calculation when cash input changes
+$('#cash').on('input', function () {
+    calculateBalance();
+});
+
+// Trigger new credit amount calculation when balance input changes manually
+$('#balance').on('input', function () {
+    calculateCreditAmount();
+});
+
+
+
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Report with Date & Time</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Sales Report</h1>
+
+    <label for="start_datetime">Start Date & Time:</label>
+    <input type="datetime-local" id="start_datetime" required>
+
+    <label for="end_datetime">End Date & Time:</label>
+    <input type="datetime-local" id="end_datetime" required>
+
+    <button id="generateReportBtn">Generate Report</button>
+
+    <h2>Summary</h2>
+    <table id="summaryTable">
+        <thead>
+            <tr>
+                <th>Total Revenue</th>
+                <th>Total Profit</th>
+                <th>Total Cost</th>
+                <th>Bill Count</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <h2>Itemized Sales</h2>
+    <table id="itemsTable">
+        <thead>
+            <tr>
+                <th>PLU</th>
+                <th>Name</th>
+                <th>Sell Quantity</th>
+                <th>Total Revenue</th>
+                <th>Profit</th>
+                <th>Cost</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+
+    <h2>Bill-wise Details</h2>
+    <table id="billDetailsTable">
+        <thead>
+            <tr>
+                <th>Bill Number</th>
+                <th>Time</th>
+                <th>PLU</th>
+                <th>Item Name</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Total Price</th>
+                <th>Bill Total</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#generateReportBtn').click(function() {
+        const startDatetime = $('#start_datetime').val();
+        const endDatetime = $('#end_datetime').val();
+
+        if (!startDatetime || !endDatetime) {
+            alert('Please select both start and end date & time.');
+            return;
+        }
+
+        $.ajax({
+            url: 'generate_report.php',
+            method: 'GET',
+            data: { start_datetime: startDatetime, end_datetime: endDatetime },
+            dataType: 'json',
+            success: function(response) {
+                if (response.status === 'success') {
+                    $('#summaryTable tbody').html(`
+                        <tr>
+                            <td>${response.summary.total_revenue}</td>
+                            <td>${response.summary.total_profit}</td>
+                            <td>${response.summary.total_cost}</td>
+                            <td>${response.summary.bill_count}</td>
+                        </tr>
+                    `);
+
+                    $('#itemsTable tbody').empty();
+                    response.items.forEach(item => {
+                        $('#itemsTable tbody').append(`
+                            <tr>
+                                <td>${item.PLU}</td>
+                                <td>${item.name}</td>
+                                <td>${item.sell_quantity}</td>
+                                <td>${item.total_revenue}</td>
+                                <td>${item.profit}</td>
+                                <td>${item.cost}</td>
+                            </tr>
+                        `);
+                    });
+
+ 		$('#billDetailsTable tbody').empty();
+
+                    response.bills.forEach(bill => {
+                        $('#billDetailsTable tbody').append(`
+                            <tr>
+                                <td>${bill.bill_number}</td>
+                                <td>${bill.time}</td>
+                                <td>${bill.PLU}</td>
+                                <td>${bill.name}</td>
+                                <td>${bill.quantity}</td>
+                                <td>${bill.price}</td>
+                                <td>${bill.total_price}</td>
+                                <td>${bill.total_amount}</td>
+                            </tr>
+                        `);
+                    });
+
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Failed to fetch the report.');
+            }
+        });
+    });
+});
+</script>
+
+</body>
+</html>

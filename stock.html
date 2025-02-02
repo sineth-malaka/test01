@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        table th {
+            background-color: #007bff;
+            color: white;
+        }
+
+        input[type="number"] {
+            width: 80px;
+            padding: 5px;
+            text-align: center;
+        }
+
+        button {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .update-btn {
+            margin-top: 10px;
+            display: block;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Stock Report</h1>
+    <table>
+        <thead>
+        <tr>
+            <th>PLU</th>
+            <th>Name</th>
+            <th>Stock</th>
+            <th>Price</th>
+            <th>Cost</th>
+            <th>Value</th>
+        </tr>
+        </thead>
+        <tbody id="stockTable"></tbody>
+    </table>
+    <button class="update-btn" id="saveStock">Save Changes</button>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+        // Fetch stock data on page load
+        fetchStockData();
+
+        function fetchStockData() {
+            $.get('get_stock_data.php', function (data) {
+                const stockTable = $('#stockTable');
+                stockTable.empty();
+
+                if (!Array.isArray(data) || data.length === 0) {
+                    stockTable.append(`<tr><td colspan="6">No data available</td></tr>`);
+                    return;
+                }
+
+                data.forEach(item => {
+                    const value = (item.stock * item.price).toFixed(2);
+                    stockTable.append(`
+                        <tr data-plu="${item.PLU}">
+                            <td>${item.PLU}</td>
+                            <td>${item.name}</td>
+                            <td><input type="number" class="stock-input" value="${item.stock}" min="0"></td>
+                            <td>$${item.price.toFixed(2)}</td>
+                            <td>$${item.cost.toFixed(2)}</td>
+                            <td>$${value}</td>
+                        </tr>
+                    `);
+                });
+            }, 'json').fail(function (xhr, status, error) {
+                alert(`Error: ${xhr.responseText || status}`);
+            });
+        }
+
+        // Save updated stock data
+        $('#saveStock').on('click', function () {
+            const updatedStock = [];
+
+            $('#stockTable tr').each(function () {
+                const row = $(this);
+                const plu = row.data('plu');
+                const stock = parseInt(row.find('.stock-input').val()) || 0;
+
+                updatedStock.push({ PLU: plu, stock });
+            });
+
+            $.ajax({
+                url: 'update_stock.php',
+                type: 'POST',
+                data: JSON.stringify(updatedStock),
+                contentType: 'application/json',
+                success: function (response) {
+                    alert(response.message || 'Stock updated successfully!');
+                    fetchStockData(); // Refresh the table
+                },
+                error: function (xhr) {
+                    alert(xhr.responseText || 'Failed to update stock.');
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>
