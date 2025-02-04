@@ -185,23 +185,23 @@
         let passwords = {};
 
         // Function to start MySQL server
-        function startMySQL() {
-            fetch('start_mysql.php')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        console.log('MySQL server started successfully');
-                    } else {
-                        console.error('Failed to start MySQL server:', data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-        }
+        // "function startMySQL() {
+        //    fetch('start_mysql.php')
+        //        .then(response => response.json())
+        //        .then(data => {
+        //            if (data.status === 'success') {
+        //                console.log('MySQL server started successfully');
+        //            } else {
+        //               console.error('Failed to start MySQL server:', data.message);
+        //            }
+        //        })
+        //        .catch(error => {
+        //            console.error('Error:', error);
+        //        });
+        //}
 
         // Start MySQL server when the page loads
-        window.onload = startMySQL;
+        // window.onload = startMySQL;
 
         // Load passwords from passwords.json
         fetch('passwords.json')
