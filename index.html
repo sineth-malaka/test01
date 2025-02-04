@@ -182,15 +182,36 @@
     </div>
 
     <script>
-        // Load stored passwords or set default ones
-        let passwords = JSON.parse(localStorage.getItem("passwords")) || {
-            billing: "1234",
-            creditors: "2345",
-            manage_stock: "3456",
-            report: "4567",
-            stock: "5678",
-            password_manager: "password123" // Default password for password manager
-        };
+        let passwords = {};
+
+        // Function to start MySQL server
+        function startMySQL() {
+            fetch('start_mysql.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        console.log('MySQL server started successfully');
+                    } else {
+                        console.error('Failed to start MySQL server:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        // Start MySQL server when the page loads
+        window.onload = startMySQL;
+
+        // Load passwords from passwords.json
+        fetch('passwords.json')
+            .then(response => response.json())
+            .then(data => {
+                passwords = data;
+            })
+            .catch(error => {
+                console.error('Error loading passwords:', error);
+            });
 
         let selectedPage = "";
         let selectedKey = "";
@@ -222,7 +243,6 @@
             navBar.classList.toggle("hidden");
         }
 
-        // Open Password Manager with a password check
         function openPasswordManager() {
             let inputPassword = prompt("Enter Password to access Password Manager:");
             if (inputPassword === passwords.password_manager) {
@@ -246,9 +266,21 @@
             }
 
             passwords[section] = newPassword;
-            localStorage.setItem("passwords", JSON.stringify(passwords));
-            alert("Password updated successfully!");
-            closePasswordManager();
+            fetch('passwords.json', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(passwords)
+            })
+            .then(() => {
+                alert("Password updated successfully!");
+                closePasswordManager();
+            })
+            .catch(error => {
+                console.error('Error updating passwords:', error);
+                alert("Failed to update password.");
+            });
         }
     </script>
 

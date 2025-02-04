@@ -1,11 +1,6 @@
 <?php
-// Database connection
-$servername = "127.0.0.1";
-$username = "root";
-$password = "";
-$database = "test01";
-
-$conn = new mysqli($servername, $username, $password, $database);
+header('Content-Type: application/json');
+include 'db_connection.php';
 
 if ($conn->connect_error) {
     http_response_code(500);
@@ -29,37 +24,38 @@ if (!empty($creditorName)) {
         $result = $stmt->get_result();
 
         if ($result->num_rows > 0) {
-            // Creditor exists, update the credit amount
-            $row = $result->fetch_assoc();
-            $newCreditAmount = $row['credit_amount'] + $creditAmount;
+            $creditor = $result->fetch_assoc();
+            $newCreditAmount = $creditor['credit_amount'] + $creditAmount;
 
+            // Update the credit amount
             $updateSql = "UPDATE creditors SET credit_amount = ? WHERE id = ?";
             $updateStmt = $conn->prepare($updateSql);
 
             if ($updateStmt) {
-                $updateStmt->bind_param("di", $newCreditAmount, $row['id']);
-                $updateStmt->execute();
-                http_response_code(200);
-                echo json_encode(['message' => 'Credit updated successfully.']);
+                $updateStmt->bind_param("di", $newCreditAmount, $creditor['id']);
+                if ($updateStmt->execute()) {
+                    echo json_encode(['success' => true, 'message' => 'Credit amount updated successfully']);
+                } else {
+                    http_response_code(500);
+                    echo json_encode(['error' => 'Failed to update credit amount: ' . $updateStmt->error]);
+                }
                 $updateStmt->close();
             } else {
                 http_response_code(500);
-                echo json_encode(['error' => 'Failed to prepare update statement: ' . $conn->error]);
+                echo json_encode(['error' => 'Prepare statement failed: ' . $conn->error]);
             }
         } else {
-            // Creditor does not exist, return an error
-            http_response_code(400);
-            echo json_encode(['error' => 'Creditor not found.']);
+            http_response_code(404);
+            echo json_encode(['error' => 'Creditor not found']);
         }
-
         $stmt->close();
     } else {
         http_response_code(500);
-        echo json_encode(['error' => 'Failed to prepare SQL statement: ' . $conn->error]);
+        echo json_encode(['error' => 'Prepare statement failed: ' . $conn->error]);
     }
 } else {
     http_response_code(400);
-    echo json_encode(['error' => 'Invalid creditor name or credit amount.']);
+    echo json_encode(['error' => 'Invalid input data']);
 }
 
 $conn->close();

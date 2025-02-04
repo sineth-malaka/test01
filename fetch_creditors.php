@@ -1,33 +1,30 @@
 <?php
 header('Content-Type: application/json');
+include 'db_connection.php';
 
-$servername = "127.0.0.1";
-$username = "root";
-$password = "";
-$database = "test01";
-
-$connection = new mysqli($servername, $username, $password, $database);
-
-if ($connection->connect_error) {
-    echo json_encode(['status' => 'error', 'message' => 'Database connection failed']);
+if ($conn->connect_error) {
+    echo json_encode(['status' => 'error', 'message' => 'Database connection failed: ' . $conn->connect_error]);
     exit;
 }
 
-$search = isset($_GET['search']) ? $connection->real_escape_string($_GET['search']) : '';
+$search = isset($_GET['search']) ? $conn->real_escape_string($_GET['search']) : '';
 
 $query = "SELECT * FROM creditors";
 if (!empty($search)) {
     $query .= " WHERE name LIKE '%$search%' OR phone LIKE '%$search%'";
 }
 
-$result = $connection->query($query);
+$result = $conn->query($query);
 
 $data = [];
-while ($row = $result->fetch_assoc()) {
-    $data[] = $row;
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
+    }
+    echo json_encode($data);
+} else {
+    echo json_encode(['status' => 'error', 'message' => 'Query failed: ' . $conn->error]);
 }
 
-echo json_encode(['status' => 'success', 'data' => $data]);
-
-$connection->close();
+$conn->close();
 ?>

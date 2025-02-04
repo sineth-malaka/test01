@@ -1,15 +1,9 @@
 <?php
 header('Content-Type: application/json');
+include 'db_connection.php';
 
-$servername = "127.0.0.1";
-$username = "root";
-$password = "";
-$database = "test01";
-
-$connection = new mysqli($servername, $username, $password, $database);
-
-if ($connection->connect_error) {
-    echo json_encode(['status' => 'error', 'message' => 'Database connection failed']);
+if ($conn->connect_error) {
+    echo json_encode(['status' => 'error', 'message' => 'Database connection failed: ' . $conn->connect_error]);
     exit;
 }
 
@@ -26,70 +20,32 @@ $summaryQuery = "
     SELECT 
         IFNULL(SUM(bi.quantity * s.price), 0) AS total_revenue,
         IFNULL(SUM((s.price - s.cost) * bi.quantity), 0) AS total_profit,
-        IFNULL(SUM(bi.quantity * s.cost), 0) AS total_cost,
-        COUNT(DISTINCT b.id) AS bill_count
-    FROM bills b
-    JOIN bill_items bi ON b.id = bi.bill_id
-    JOIN stock s ON bi.PLU = s.PLU
-    WHERE b.created_at BETWEEN ? AND ?
+        IFNULL(SUM(bi.quantity * s.cost), 0) AS total_cost
+    FROM 
+        bill_items bi
+    JOIN 
+        stock s ON bi.stock_id = s.id
+    WHERE 
+        bi.datetime BETWEEN ? AND ?
 ";
 
-$stmt1 = $connection->prepare($summaryQuery);
-$stmt1->bind_param("ss", $startDatetime, $endDatetime);
-$stmt1->execute();
-$summaryResult = $stmt1->get_result()->fetch_assoc();
-$stmt1->close();
+$stmt = $conn->prepare($summaryQuery);
+if ($stmt === false) {
+    echo json_encode(['status' => 'error', 'message' => 'Prepare statement failed: ' . $conn->error]);
+    exit;
+}
 
-// Item-wise Sales Query
-$itemQuery = "
-    SELECT s.PLU, s.name, SUM(bi.quantity) AS sell_quantity, 
-           SUM(bi.quantity * s.price) AS total_revenue, 
-           SUM((s.price - s.cost) * bi.quantity) AS profit, 
-           SUM(bi.quantity * s.cost) AS cost
-    FROM bill_items bi
-    JOIN stock s ON bi.PLU = s.PLU
-    JOIN bills b ON bi.bill_id = b.id
-    WHERE b.created_at BETWEEN ? AND ?
-    GROUP BY s.PLU, s.name
-";
+$stmt->bind_param("ss", $startDatetime, $endDatetime);
+$stmt->execute();
+$result = $stmt->get_result();
 
-$stmt2 = $connection->prepare($itemQuery);
-$stmt2->bind_param("ss", $startDatetime, $endDatetime);
-$stmt2->execute();
-$itemData = $stmt2->get_result()->fetch_all(MYSQLI_ASSOC);
-$stmt2->close();
+if ($result) {
+    $summary = $result->fetch_assoc();
+    echo json_encode(['status' => 'success', 'data' => $summary]);
+} else {
+    echo json_encode(['status' => 'error', 'message' => 'Query failed: ' . $conn->error]);
+}
 
-// Bill-wise Sales Query
-$billQuery = "
-    SELECT 
-        b.id AS bill_number, 
-        b.created_at AS time, 
-        b.total_amount, 
-        b.cash,
-        s.PLU, 
-        s.name, 
-        bi.quantity, 
-        s.price, 
-        (bi.quantity * s.price) AS total_price
-    FROM bills b
-    JOIN bill_items bi ON b.id = bi.bill_id
-    JOIN stock s ON bi.PLU = s.PLU
-    WHERE b.created_at BETWEEN ? AND ?
-    ORDER BY b.created_at, b.id
-";
-
-$stmt3 = $connection->prepare($billQuery);
-$stmt3->bind_param("ss", $startDatetime, $endDatetime);
-$stmt3->execute();
-$billResult = $stmt3->get_result()->fetch_all(MYSQLI_ASSOC);
-$stmt3->close();
-
-echo json_encode([
-    'status' => 'success',
-    'summary' => $summaryResult,
-    'items' => $itemData,
-    'bills' => $billResult
-]);
-
-$connection->close();
+$stmt->close();
+$conn->close();
 ?>

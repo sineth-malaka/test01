@@ -1,11 +1,6 @@
 <?php
-$servername = "127.0.0.1";
-$username = "root";
-$password = "";
-$database = "test01";
-
-// Connect to the database
-$conn = new mysqli($servername, $username, $password, $database);
+header('Content-Type: application/json');
+include 'db_connection.php';
 
 // Check connection
 if ($conn->connect_error) {
@@ -18,19 +13,22 @@ $result = $conn->query($sql);
 
 // Prepare data for JSON response
 $data = [];
-if ($result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
-        $data[] = [
-            "PLU" => $row["PLU"],
-            "name" => $row["name"],
-            "stock" => intval($row["stock"]),
-            "price" => floatval($row["price"]),
-            "cost" => floatval($row["cost"]),
-        ];
+if ($result) {
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $data[] = [
+                "PLU" => $row["PLU"],
+                "name" => $row["name"],
+                "stock" => intval($row["stock"]),
+                "price" => floatval($row["price"]),
+                "cost" => floatval($row["cost"]),
+            ];
+        }
     }
+    echo json_encode(["success" => true, "data" => $data]);
+} else {
+    echo json_encode(["success" => false, "message" => "Query failed: " . $conn->error]);
 }
 
-// Send JSON response
-echo json_encode($data);
 $conn->close();
 ?>

@@ -1,13 +1,6 @@
 <?php
 header('Content-Type: application/json');
-
-// Database connection
-$servername = "127.0.0.1";
-$username = "root";
-$password = "";
-$database = "test01";
-
-$conn = new mysqli($servername, $username, $password, $database);
+include 'db_connection.php';
 
 if ($conn->connect_error) {
     http_response_code(500);
@@ -28,75 +21,31 @@ $billNumber = $data['bill_number'];
 $totalAmount = $data['total_amount'];
 $cash = $data['cash'];
 $creditorId = $data['creditor_id'] ?? null;
-$creditorName = isset($data['creditor_name']) ? trim($data['creditor_name']) : null;
-$creditAmount = $data['credit_amount'] ?? 0;
-$balance = $data['balance'] ?? 0;
-$billItems = $data['bill_items'];
-
-// Validate bill items
-if (empty($billItems)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'No bill items provided.']);
-    exit;
-}
 
 // Start transaction
 $conn->begin_transaction();
 
 try {
-    // Insert bill details
-    $stmt = $conn->prepare("INSERT INTO bills (total_amount, cash, creditor_name) VALUES (?, ?, ?)");
-    if (!$stmt) {
-        throw new Exception("Failed to prepare statement for bills: " . $conn->error);
-    }
-    $stmt->bind_param("dds", $totalAmount, $cash, $creditorName);
-    if (!$stmt->execute()) {
-        throw new Exception("Failed to execute statement for bills: " . $stmt->error);
-    }
+    // Insert bill
+    $stmt = $conn->prepare("INSERT INTO bills (bill_number, total_amount, cash, creditor_id) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("idii", $billNumber, $totalAmount, $cash, $creditorId);
+    $stmt->execute();
     $billId = $stmt->insert_id;
+    $stmt->close();
 
     // Insert bill items
-    $itemStmt = $conn->prepare("INSERT INTO bill_items (bill_id, plu, quantity) VALUES (?, ?, ?)");
-    if (!$itemStmt) {
-        throw new Exception("Failed to prepare statement for bill items: " . $conn->error);
+    $stmt = $conn->prepare("INSERT INTO bill_items (bill_id, stock_id, quantity, price) VALUES (?, ?, ?, ?)");
+    foreach ($data['bill_items'] as $item) {
+        $stmt->bind_param("iiid", $billId, $item['stock_id'], $item['quantity'], $item['price']);
+        $stmt->execute();
     }
-
-    foreach ($billItems as $item) {
-        if (!isset($item['PLU'], $item['quantity'])) {
-            throw new Exception("Invalid bill item data.");
-        }
-        $itemStmt->bind_param("isi", $billId, $item['PLU'], $item['quantity']);
-        if (!$itemStmt->execute()) {
-            throw new Exception("Failed to execute statement for bill items: " . $itemStmt->error);
-        }
-    }
-
-    // Update only Bill Amount, Cash, Balance, Credit Amount for the creditor
-    if ($creditorId) {
-        $updateStmt = $conn->prepare("
-            UPDATE creditors 
-            SET bill_amount = bill_amount + ?, 
-                cash = cash + ?, 
-                balance = balance + ?, 
-                credit_amount = ?
-            WHERE id = ?
-        ");
-
-        if (!$updateStmt) {
-            throw new Exception("Failed to prepare update statement: " . $conn->error);
-        }
-
-        $updateStmt->bind_param("ddddi", $totalAmount, $cash, $balance, $creditAmount, $creditorId);
-
-        if (!$updateStmt->execute()) {
-            throw new Exception("Failed to update creditor: " . $updateStmt->error);
-        }
-    }
+    $stmt->close();
 
     // Commit transaction
     $conn->commit();
-    echo json_encode(['success' => true]);
+    echo json_encode(['success' => true, 'message' => 'Bill saved successfully']);
 } catch (Exception $e) {
+    // Rollback transaction
     $conn->rollback();
     http_response_code(500);
     echo json_encode(['error' => 'Failed to save bill: ' . $e->getMessage()]);

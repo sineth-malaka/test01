@@ -1,15 +1,9 @@
 <?php
 header('Content-Type: application/json');
+include 'db_connection.php';
 
-$servername = "127.0.0.1";
-$username = "root";
-$password = "";
-$database = "test01";
-
-$connection = new mysqli($servername, $username, $password, $database);
-
-if ($connection->connect_error) {
-    echo json_encode(['status' => 'error', 'message' => 'Database connection failed: ' . $connection->connect_error]);
+if ($conn->connect_error) {
+    echo json_encode(['status' => 'error', 'message' => 'Database connection failed: ' . $conn->connect_error]);
     exit;
 }
 
@@ -27,11 +21,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $stmt = $connection->prepare("
+    $stmt = $conn->prepare("
         UPDATE creditors 
-        SET name = ?, phone = ?, bill_amount = ?, cash = ?, balance = ?, credit_amount = ?
+        SET name = ?, phone = ?, bill_amount = ?, cash = ?, balance = ?, credit_amount = ? 
         WHERE id = ?
     ");
+    if ($stmt === false) {
+        echo json_encode(['status' => 'error', 'message' => 'Prepare statement failed: ' . $conn->error]);
+        exit;
+    }
+
     $stmt->bind_param("ssddddi", $name, $phone, $bill_amount, $cash, $balance, $credit_amount, $id);
 
     if ($stmt->execute()) {
@@ -45,5 +44,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     echo json_encode(['status' => 'error', 'message' => 'Invalid request method']);
 }
 
-$connection->close();
+$conn->close();
 ?>

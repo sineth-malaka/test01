@@ -1,30 +1,25 @@
 <?php
 header('Content-Type: application/json');
+include 'db_connection.php';
 
-// Database connection
-$servername = "127.0.0.1";
-$username = "root";
-$password = "";
-$database = "test01";
-
-$connection = new mysqli($servername, $username, $password, $database);
-
-if ($connection->connect_error) {
-    echo json_encode(['status' => 'error', 'message' => 'Database connection failed']);
+if ($conn->connect_error) {
+    echo json_encode(['status' => 'error', 'message' => 'Database connection failed: ' . $conn->connect_error]);
     exit();
 }
 
 // Fetch distinct categories from the `stock` table
 $query = "SELECT DISTINCT category FROM stock";
-$result = $connection->query($query);
+$result = $conn->query($query);
 
 $categories = [];
-while ($row = $result->fetch_assoc()) {
-    $categories[] = $row['category'];
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        $categories[] = $row['category'];
+    }
+    echo json_encode($categories);
+} else {
+    echo json_encode(['status' => 'error', 'message' => 'Query failed: ' . $conn->error]);
 }
 
-// Send categories as JSON
-echo json_encode($categories);
-
-$connection->close();
+$conn->close();
 ?>

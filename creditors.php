@@ -1,11 +1,6 @@
 <?php
-// Database connection
-$servername = "127.0.0.1";
-$username = "root";
-$password = "";
-$database = "test01";
-
-$conn = new mysqli($servername, $username, $password, $database);
+header('Content-Type: application/json');
+include 'db_connection.php';
 
 if ($conn->connect_error) {
     http_response_code(500);
@@ -27,24 +22,17 @@ if (!empty($query)) {
         $response = [];
 
         while ($row = $result->fetch_assoc()) {
-            $response[] = [
-                'id' => $row['id'],
-                'name' => $row['name'],
-                'phone' => $row['phone'],
-                'credit_amount' => $row['credit_amount']
-            ];
+            $response[] = $row;
         }
 
-        $stmt->close();
-        header('Content-Type: application/json');
         echo json_encode($response);
+        $stmt->close();
     } else {
         http_response_code(500);
-        echo json_encode(['error' => 'Failed to prepare SQL statement: ' . $conn->error]);
+        echo json_encode(['error' => 'Prepare statement failed: ' . $conn->error]);
     }
 } else {
-    header('Content-Type: application/json');
-    echo json_encode([]);
+    echo json_encode(['error' => 'No query parameter provided']);
 }
 
 $conn->close();
