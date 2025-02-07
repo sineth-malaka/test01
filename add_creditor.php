@@ -1,4 +1,3 @@
-
 <?php
 header('Content-Type: application/json');
 include 'db_connection.php';
@@ -44,5 +43,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $conn->close();
-
 ?>

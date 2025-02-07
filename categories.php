@@ -1,4 +1,3 @@
-
 <?php
 header('Content-Type: application/json');
 include 'db_connection.php';
@@ -23,5 +22,4 @@ if ($result) {
 }
 
 $conn->close();
-
 ?>
