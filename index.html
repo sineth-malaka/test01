@@ -138,6 +138,13 @@
     </style>
 </head>
 <body>
+<form onsubmit="login(); return false;">
+    <input type="email" id="email" placeholder="Enter Email" required>
+    <input type="password" id="password" placeholder="Enter Password" required>
+    <button type="submit">Login</button>
+</form>
+
+<script src="auth.js"></script>
 
     <button id="toggleBtn" class="toggle-button" onclick="toggleNav()">☰ Menu</button>
 
